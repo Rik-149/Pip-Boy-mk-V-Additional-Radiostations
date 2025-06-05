@@ -15,6 +15,7 @@ const WIDTH = g.getWidth();
 const CENTER = WIDTH / 2;
 let cache = { enabled: false };
 let build_dir = { enabled: false };
+let knob1Cooldown = false;
 
 function loadAndCreateRadioStations(filePath, baseDir) {
   let radioStations = {
@@ -56,11 +57,13 @@ function loadAndCreateRadioStations(filePath, baseDir) {
 }
 
 function buildAndSaveClipCache() {
+  console.log('Enter Buildfunc:');
   let folders = ['KPSS', 'APPALACHIA', 'DIAMOND_CITY', 'NEW_VEGAS'];
   let types = Object.values(CLIP_TYPE);
   let cache = {};
   folders.forEach((folder) => {
     let folderCache = {};
+    console.log('Enter Buildfunc:');
     try {
       process.memory();
       let allFiles = fs
@@ -81,12 +84,12 @@ function buildAndSaveClipCache() {
     }
     cache[folder] = folderCache;
   });
+  console.log('Cache built:');
   process.memory();
   fs.writeFile(
     'USER/AdditionalRadioStations/clipCache.json',
     JSON.stringify(cache),
   );
-  return cache;
 }
 
 function draw() {
@@ -136,15 +139,16 @@ function handleTorch() {
 draw();
 
 Pip.on('knob1', function (dir) {
-  Pip.knob1Click();
+  if (knob1Cooldown) return;
 
-  if (dir < 0) draw();
-  else if (dir > 0) draw();
-  else toggleCache();
+  knob1Cooldown = true;
+  setTimeout(() => {
+    knob1Cooldown = false;
+  }, 300); // cooldown period in milliseconds
+  buildAndSaveClipCache();
+  cache.enabled = !cache.enabled;
+  draw();
 });
-
 Pip.on('torch', handleTorch);
 
-// problems: boot app is too big, so this app runs out of memory
 // todo: only load at boottime when this app has run
-// todo: make UI with button to make folders and button to generate clipcache
