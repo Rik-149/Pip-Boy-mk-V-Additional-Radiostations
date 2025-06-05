@@ -3,7 +3,7 @@
 //  License: CC-BY-NC-4.0
 //  Description: Adds additional radio stations to the Pip-Boy 3000 mkV. Specifically,
 //               Appalachia Radio, Diamond City Radio, and Radio New Vegas.
-//  Version: 1.0.0
+//  Version: 1.1.0
 // =============================================================================
 
 const DEBUG = false;
@@ -56,12 +56,18 @@ let radioPlayClipCustom = (a, station, b) => (
           (a = [CLIP_TYPE.MUSIC, CLIP_TYPE.VOICE, CLIP_TYPE.SFX][
             Math.floor(Math.random() * 2.999)
           ]);
-      let e = getCachedClipList(station, a);
-      e.length || f('No radio clips found');
-      let g = getRandomExcluding(e.length, Pip.lastClipIndex);
-      b && console.log(`Playing radio clip type ${a}: ${e[g]}`),
-        console.log(e[g]),
-        Pip.audioStart(e[g]),
+      let clips;
+      if (!Pip.radioKPSS){
+          clips = getCachedClipList(station, a);
+      }
+      else {
+          clips = fs.readdirSync("RADIO").sort().filter(b => b.startsWith(a) && b.toUpperCase().endsWith("WAV") && !b.startsWith(".")).map((b) => `RADIO/${b}`);
+      }
+      clips.length || f('No radio clips found');
+      let g = getRandomExcluding(clips.length, Pip.lastClipIndex);
+      b && console.log(`Playing radio clip type ${a}: ${clips[g]}`),
+        console.log(clips[g]),
+        Pip.audioStart(clips[g]),
         Pip.on('streamStopped', d),
         (Pip.radioClipPlaying = !0),
         (Pip.lastClipIndex = g);
@@ -78,33 +84,24 @@ try {
 }
 
 (function initAdditionalRadiostations() {
-  debug('[initAdditionalRadiostations] Initializing custom radio patch');
-
   try {
-    // Ensure MODE and MODEINFO are defined
     if (
       typeof MODEINFO !== 'undefined' &&
       typeof MODE !== 'undefined' &&
       MODEINFO[MODE.RADIO]
     ) {
       const radioTab = MODEINFO[MODE.RADIO];
-
-      // OPTIONAL: remove the default function if present
+      // remove the default function if present
       if (radioTab.fn) {
         delete radioTab.fn;
       }
-
-      // Define your own radio behavior
       radioTab.fn = function () {
         debug('[radioTab.fn] Custom radio logic triggered');
-        // Clear screen and do your thing
         bC.clear(1);
         bC.setColor(3)
           .setFontMonofonto16()
           .drawString('Custom Radio Active', 40, 40);
         bC.flip();
-
-        // Insert your radio logic here — play audio, update display, etc.
         rd._options || rd.setupI2C(), bC.clear(1);
         let f = 0;
         let cachedRadioClips = {};
@@ -266,7 +263,6 @@ try {
               radioPlayClipCustom(CLIP_TYPE.MUSIC, 'NEW_VEGAS');
             return;
           }
-          // FM radio tuning logic (only runs if no custom station is on)
           if (!d && a == e) {
             rd.freq = rd.freq + e * 0.1;
             rd.freq < rd.start / 100 && (rd.freq = rd.end / 100);
@@ -303,12 +299,9 @@ try {
             g();
         };
       };
-
-      debug('[initAdditionalRadiostations] Radio tab overridden');
-    } else {
-      debug('[initAdditionalRadiostations] Radio mode not available');
-    }
+    } 
   } catch (err) {
     print('[initAdditionalRadiostations] Failed to patch radio tab:', err);
   }
 })();
+initAdditionalRadiostations();

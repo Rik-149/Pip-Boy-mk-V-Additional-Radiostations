@@ -4,7 +4,7 @@
 //  Repository: https://github.com/CodyTolene/pip-apps
 //  Description: Adds additional radio stations to the Pip-Boy 3000 mkV. Specifically,
 //               Appalachia Radio, Diamond City Radio, and Radio New Vegas.
-//  Version: 1.0.0
+//  Version: 1.1.0
 // =============================================================================
 
 const fs = require('fs');
