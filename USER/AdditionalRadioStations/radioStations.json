@@ -1,0 +1,17 @@
+[
+  {
+    "displayName": "Appalachia Radio",
+    "folder": "APPALACHIA",
+    "type": "Any"
+  },
+  {
+    "displayName": "Diamond City Radio",
+    "folder": "DIAMOND_CITY",
+    "type": "Any"
+  },
+  {
+    "displayName": "Radio New Vegas",
+    "folder": "NEW_VEGAS",
+    "type": "Any"
+  }
+]
