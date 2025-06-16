@@ -3,33 +3,49 @@
 //  License: CC-BY-NC-4.0
 //  Description: Adds additional radio stations to the Pip-Boy 3000 mkV. Specifically,
 //               Appalachia Radio, Diamond City Radio, and Radio New Vegas.
-//  Version: 1.1.0
+//  Version: 1.0.0
 // =============================================================================
 
 const DEBUG = false;
 fs = require('fs');
+let cachedRadioClips = {};
 
 function debug() {
   if (!DEBUG) return;
   print.apply(null, arguments);
 }
 
-function getCachedClipList(folder, type) {
-  if (!cachedRadioClips[folder]) cachedRadioClips[folder] = {};
-  if (!cachedRadioClips[folder][type]) {
-    try {
-      let path = `USER/AdditionalRadioStations/${folder}`;
-      let allFiles = require('fs').readdirSync(path).sort();
-      cachedRadioClips[folder][type] = allFiles.filter(
-        (f) =>
-          f.startsWith(type) &&
-          f.toUpperCase().endsWith('WAV') &&
-          !f.startsWith('.'),
-      );
-    } catch (e) {
-      cachedRadioClips[folder][type] = []; // fallback to empty list
+function parseCache(text) {
+  var lines = text.split('\n');
+  var result = {};
+  var folder = null;
+  var type = null;
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    if (line.startsWith('[') && line.endsWith(']')) {
+      var inside = line.slice(1, -1);
+      var dotIndex = inside.indexOf('.');
+      if (dotIndex === -1) {
+        folder = null;
+        type = null;
+        continue;
+      }
+      folder = inside.slice(0, dotIndex);
+      type = inside.slice(dotIndex + 1);
+      if (!result[folder]) result[folder] = {};
+      if (!result[folder][type]) result[folder][type] = [];
+    } else if (folder && type) {
+      result[folder][type].push(line);
     }
   }
+  return result;
+}
+
+
+function getCachedClipList(folder, type) {
+  if (!cachedRadioClips[folder]) cachedRadioClips[folder] = {};
+  if (!cachedRadioClips[folder][type]) cachedRadioClips[folder][type] = [];
   return cachedRadioClips[folder][type];
 }
 
@@ -63,10 +79,11 @@ let radioPlayClipCustom = (a, station, b) => (
       else {
           clips = fs.readdirSync("RADIO").sort().filter(b => b.startsWith(a) && b.toUpperCase().endsWith("WAV") && !b.startsWith(".")).map((b) => `RADIO/${b}`);
       }
+      console.log('clips', clips);
       clips.length || f('No radio clips found');
       let g = getRandomExcluding(clips.length, Pip.lastClipIndex);
       b && console.log(`Playing radio clip type ${a}: ${clips[g]}`),
-        console.log(clips[g]),
+        console.log('playing clip:', clips[g]),
         Pip.audioStart(clips[g]),
         Pip.on('streamStopped', d),
         (Pip.radioClipPlaying = !0),
@@ -75,12 +92,13 @@ let radioPlayClipCustom = (a, station, b) => (
   })
 );
 
+
 try {
-  cachedRadioClips = JSON.parse(
-    require('fs').readFileSync('USER/AdditionalRadioStations/clipCache.json'),
-  );
-} catch (e) {
-  // buildAndSaveClipCache();
+  const cacheFile = 'USER/AdditionalRadioStations/clipCache.txt';
+  const fileContent = fs.readFileSync(cacheFile, 'utf8');
+  cachedRadioClips = parseCache(fileContent);
+} catch {
+  cachedRadioClips = {};
 }
 
 (function initAdditionalRadiostations() {
